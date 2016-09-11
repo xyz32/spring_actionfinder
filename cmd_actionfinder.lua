@@ -262,7 +262,7 @@ end
 
 local function UpdateCamera(pozX, pozZ, Uid)
 	lastMove = gameSecs
-	
+
 	if Uid then 
 		spSendCommands{"specteam "..spGetUnitTeam(Uid)}
 	end
@@ -407,7 +407,14 @@ end
 local function DrawEvent(event)
 	if gameSecs > lastMove + CAMERA_IDLE_RESPONSE then
 		eventsCount = 0
-		UpdateCamera(event.x, event.z)
+		local u=nil
+		
+		if spValidUnitID(event.u) then
+			u=event.u
+		elseif spValidUnitID(event.a) then
+			u=event.a
+		end
+		UpdateCamera(event.x, event.z, u)
 	end
 end
 
@@ -445,7 +452,8 @@ local function DrawDamage(damage)
 	end
 
 	if (gameSecs > lastMove + CAMERA_FIGHT_RESPONSE) and (eventsCount < FORCE_ECONOMY_VIEW) then
-		eventsCount = eventsCount + 1;
+		eventsCount = eventsCount + 1
+		spEcho("DrawDamage "..u)
 		UpdateCamera(px, pz, u)
 	end
 end
@@ -549,9 +557,6 @@ end
 --------------------------------------------------------------------------------
 
 local function AddEvent(unitID, unitDefID, color, cost)
-	if (not spIsUnitAllied(unitID)) then
-		return
-	end
 	local ud = UnitDefs[unitDefID]
 	if ((ud == nil) or ud.isFeature) then
 		return
@@ -653,10 +658,6 @@ end
 --------------------------------------------------------------------------------
 
 function widget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponID, attackerID, attackerDefID)
-
-	if (not spIsUnitAllied(unitID)) then
-		return
-	end
 	if (damage <= 0) then
 		return
 	end
