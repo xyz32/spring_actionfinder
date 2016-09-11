@@ -25,6 +25,7 @@ local SWITCH_LIMIT						= 2500
 local CAMERA_IDLE_RESPONSE     			= 10
 local CAMERA_FIGHT_RESPONSE 			= 5
 local FORCE_ECONOMY_VIEW				= 10      -- show some economy stuff after this many events
+local FORCE_ECONOMY_TIMEOUT				= 100      -- show some economy stuff after this many events
 local USER_IDLE_RESUME         			= 10
 local CAMERA_ELEVATION					= 10
 
@@ -265,6 +266,7 @@ local function UpdateCamera(pozX, pozZ, Uid)
 
 	if Uid then 
 		spSendCommands{"specteam "..spGetUnitTeam(Uid)}
+		spSelectUnitArray({Uid})
 	end
 
 	if inAttractMode then
@@ -405,7 +407,7 @@ end
 --------------------------------------------------------------------------------
 
 local function DrawEvent(event)
-	if gameSecs > lastMove + CAMERA_IDLE_RESPONSE then
+	if gameSecs > lastMove + CAMERA_FIGHT_RESPONSE then
 		eventsCount = 0
 		local u=nil
 		
@@ -451,10 +453,14 @@ local function DrawDamage(damage)
 		end
 	end
 
-	if (gameSecs > lastMove + CAMERA_FIGHT_RESPONSE) and (eventsCount < FORCE_ECONOMY_VIEW) then
+	if (gameSecs > lastMove + CAMERA_FIGHT_RESPONSE) then
 		eventsCount = eventsCount + 1
-		spEcho("DrawDamage "..u)
-		UpdateCamera(px, pz, u)
+		if (eventsCount > FORCE_ECONOMY_VIEW + FORCE_ECONOMY_TIMEOUT) then
+			eventsCount = 0
+		end
+		if (eventsCount < FORCE_ECONOMY_VIEW) then
+			UpdateCamera(px, pz, u)
+		end
 	end
 end
 
@@ -609,7 +615,6 @@ function widget:DrawWorldPreUnit()
 		if (lastMove+TRANSITION_DURATION+0.2>gameSecs) then
 			return
 		elseif not IsTerrainViewable(WantedX,WantedZ) then
-			spEcho("View blocked, redoing it.")
 			PickCameraMode(WantedX,WantedZ)
 		end
 	end
